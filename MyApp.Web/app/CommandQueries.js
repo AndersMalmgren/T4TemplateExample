@@ -11,11 +11,12 @@
 			$.post(url, buildContract(command));
 		}
 	};
-	
+
 	window.MyApp = (window.MyApp || {});
 	window.MyApp.Core = (window.MyApp.Core || {});
 	window.MyApp.Core.Contracts = (window.MyApp.Core.Contracts || {});
 	window.MyApp.Core.Contracts.Queries = (window.MyApp.Core.Contracts.Queries || {});
+	
 	
     window.MyApp.Core.Contracts.Queries.FooQuery = function(bar) {
         this.bar = bar;

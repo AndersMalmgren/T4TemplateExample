@@ -27,16 +27,16 @@ var contracts = GetSubClasses("MyApp.Core.Contracts.Commands.Command", project)
 			$.post(url, buildContract(command));
 		}
 	};
-<#
 
+<#
+foreach(var part in BuildNamespace(contracts)) {
+	#>	<#= part #>
+<#
+}
 
 foreach(var contract in contracts) {
 		#>	
 	<#
-	foreach(var part in BuildNameSpace(contract)) {
-		#><#= part #>
-	<#
-	}
 
     var properties = GetProperties(contract).Select(p => CamelCased(p.Name)).ToList();
     var args = string.Join(", ", properties);
@@ -58,19 +58,14 @@ foreach(var contract in contracts) {
 })(window.MyApp = window.MyApp || {});
 <#+
 
-private static IEnumerable<string> BuildNameSpace(CodeClass @class)
+public IEnumerable<string> BuildNamespace(IEnumerable<CodeClass> contracts) 
 {
-    return BuildNameSpace(@class.Namespace.Name.Split('.'), "window", new List<string>());
-}            
+	var window = new Namespace();
+	foreach(var contract in contracts) {
+		window.Add(contract.Namespace.Name.Split('.'));
+    }
 
-private static IEnumerable<string> BuildNameSpace(IEnumerable<string> @namespace, string parent, List<string> parts)
-{
-    var part = @namespace.FirstOrDefault();
-    if (part == null) return parts;
-
-    var current = string.Format("{0}.{1}", parent, part);
-    parts.Add(string.Format("{0} = ({0} || {{}});", current));
-    return BuildNameSpace(@namespace.Skip(1), current, parts);
+	return window.Render();
 }
 
 public IEnumerable<CodeClass> GetSubClasses(string baseClass, Project project)
@@ -117,5 +112,72 @@ public IEnumerable<CodeProperty> GetProperties(CodeClass @class)
 		.Where(ce => ce.Kind == vsCMElement.vsCMElementProperty)
 		.Cast<CodeProperty>()
 		.Where(p => p.Access == vsCMAccess.vsCMAccessPublic && p.Setter != null && p.Setter.Access == vsCMAccess.vsCMAccessPublic));
-	}
+}
+
+public class Namespace
+{
+    public Namespace Parent { get; set; }
+    public string Name { get; private set; }
+    public Dictionary<string, Namespace> Children { get; private set; }
+
+    public Namespace() : this(null, "window") { }
+
+    public Namespace(Namespace parent, string name)
+    {
+        Parent = parent;
+        Name = name;
+        Children = new Dictionary<string, Namespace>();
+    }
+
+    public void Add(IEnumerable<string> childTree)
+    {
+        var name = childTree.FirstOrDefault();
+        if (name != null)
+        {
+            var child = GetChild(name);
+            child.Add(childTree.Skip(1));
+        }
+    }
+
+    public IEnumerable<string> Render()
+    {
+        var parts = new List<string>(); 
+
+        foreach (var child in Children.Values)
+        {
+            var closureSafe = string.Format("{0} = ({0} || {{}});", child.GetFullName());
+
+            parts.Add(closureSafe);
+            parts.AddRange(child.Render());
+        }
+
+        return parts;
+    }
+
+    private Namespace GetChild(string name)
+    {
+        if (!Children.ContainsKey(name))
+        {
+            Children[name] = new Namespace(this, name);
+        }
+        return Children[name];
+    }
+
+
+
+    private string GetFullName()
+    {
+        string name = null;
+        if (Parent != null)
+        {
+            name = Parent.GetFullName();
+        }
+        if(name != null)
+            return string.Format("{0}.{1}", name, Name);
+
+
+        return Name;
+    }
+}
+
  #>
