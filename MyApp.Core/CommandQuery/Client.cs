@@ -14,6 +14,7 @@ namespace MyApp.Core.CommandQuery
     {
         private static Dictionary<Type, QueryInfo> queryHandlers;
         private static Dictionary<Type, Delegate> messageBusStub = new Dictionary<Type, Delegate>() { {typeof(FooQuery), new Func<FooQuery, FooResult>(FooStub)}};
+        
         static Client()
         {
             BuildCache();
@@ -29,13 +30,14 @@ namespace MyApp.Core.CommandQuery
 
         public TResult SendQuery<TQuery, TResult>(TQuery query) where TQuery : Query<TResult> where TResult : QueryResult
         {
-            //Generic static type entry point here, either call a message bus or a handler for TQuery, code below is just a stub
+            //Generic static typed entry point here, either call a message bus or a handler for TQuery, code below is just a stub
 
             return (messageBusStub[typeof (TQuery)] as Func<TQuery, TResult>)(query);
         }
         
         public void SendCommand<TCommand>(TCommand command) where TCommand : Command
         {
+            //Stub
         }
         
         private static void BuildCache()
@@ -65,7 +67,7 @@ namespace MyApp.Core.CommandQuery
             public MethodInfo Handler { get; private set; }
         }
 
-        public static FooResult FooStub(FooQuery query)
+        private static FooResult FooStub(FooQuery query)
         {
             var rand = new Random();
             var result = Enumerable.Range(0, 50)

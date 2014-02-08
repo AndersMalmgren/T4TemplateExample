@@ -1,7 +1,11 @@
-﻿using System.Web.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Http;
 using MyApp.Core.CommandQuery;
 using MyApp.Core.Contracts.Commands;
 using MyApp.Core.Contracts.Queries;
+using MyApp.Core.Extensions;
 using Newtonsoft.Json.Linq;
 
 namespace MyApp.Web.Controllers
@@ -9,6 +13,12 @@ namespace MyApp.Web.Controllers
     public class CommandQueryController : ApiController
     {
         private readonly IClient client;
+        private static Dictionary<string, Type> dtoTypes;
+
+        static CommandQueryController()
+        {
+            BuildCache();
+        }
 
         public CommandQueryController(IClient client)
         {
@@ -29,11 +39,18 @@ namespace MyApp.Web.Controllers
 
         private TDto CreateDto<TDto>(Contract contract) where TDto : class
         {
-            var type = typeof(Query).Assembly.GetType(contract.Type);
+            var type = dtoTypes[contract.Type];
             var jObject = JObject.Parse(contract.Data);
             var dto = jObject.ToObject(type);
 
             return dto as TDto;
+        }
+
+        private static void BuildCache()
+        {
+            dtoTypes = ReflectionExtension.ListDescendants<Query>()
+                .Concat(ReflectionExtension.ListDescendants<Command>())
+                .ToDictionary(t => t.FullName);
         }
 
         public class Contract
