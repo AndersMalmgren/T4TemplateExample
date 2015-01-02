@@ -78,21 +78,14 @@ public IEnumerable<CodeClass> GetSubClasses(string baseClass, Project project)
 		.ToList(); 
 }
 
-
 public IEnumerable<CodeClass> GetInheritance(CodeClass @class) 
-{
-	return GetInheritance(@class, new List<CodeClass>());
-}
-
-public IEnumerable<CodeClass> GetInheritance(CodeClass @class, List<CodeClass> collection) 
 {
 	foreach(CodeClass @base in @class.Bases) 
 	{
-		collection.Add(@base);
-		GetInheritance(@base, collection);
+		yield return @base;
+		foreach(var sub in GetInheritance(@base)) 
+			yield return sub;
 	}
-
-	return collection;
 }
 
 public string CamelCased(string pascalCased) {
